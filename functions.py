@@ -39,9 +39,7 @@ def get_routes(city: str) -> None:
     writes to resources/*city*/routes.json
     return None
     """
-
     soup = BeautifulSoup(requests.get(HOST + city + 'transport/' + TODAY).text, features="html.parser")
-
     routes = {int(x.get('value')): x.text for x in soup.find('select', {'name': 'bus_id'}). \
         find_all('option') if x.get('value') != '0'}
 
@@ -63,7 +61,7 @@ def post_ajax(city: str, bus_id: str = 0, date: str = TODAY) -> dict:
     credit: github.com/az09
     """
 
-    data = {'city_slug': city,
+    data = {'city_slug': city.strip('/'),
             'bus_id': bus_id,
             'day': date}
 
