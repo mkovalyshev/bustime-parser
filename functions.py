@@ -26,6 +26,9 @@ def get_cities(url: str = 'https://www.bustime.ru') -> None:
     cities = [x.get('href') for x in soup.find("div", {"aria-label": " Список городов "}). \
         find_all("a", {"class": 'item'})]
 
+    if not os.path.exists('resources/'):
+        os.mkdir('resources/')
+
     with open("resources/cities.txt", "w") as file:
         file.write(';'.join(cities))
 
