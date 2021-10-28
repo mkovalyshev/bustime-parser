@@ -11,3 +11,8 @@ if os.path.exists('resources/cities.txt'):
 else:
     print('LOG: fetching from bustime.ru')
     get_cities()
+    with open('resources/cities.txt') as f:
+        cities = f.read().split(';')
+
+print(f'LOG: fetched {len(cities)} cities')
+

@@ -21,7 +21,7 @@ def get_cities(url: str = 'https://www.bustime.ru') -> None:
     returns None
     """
 
-    soup = BeautifulSoup(requests.get(url).text)
+    soup = BeautifulSoup(requests.get(url).text, features="html.parser")
 
     cities = [x.get('href') for x in soup.find("div", {"aria-label": " Список городов "}). \
         find_all("a", {"class": 'item'})]
@@ -40,7 +40,7 @@ def get_routes(city: str) -> None:
     return None
     """
 
-    soup = BeautifulSoup(requests.get(HOST + city + 'transport/' + TODAY).text)
+    soup = BeautifulSoup(requests.get(HOST + city + 'transport/' + TODAY).text, features="html.parser")
 
     routes = {int(x.get('value')): x.text for x in soup.find('select', {'name': 'bus_id'}). \
         find_all('option') if x.get('value') != '0'}
