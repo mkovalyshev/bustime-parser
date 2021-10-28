@@ -47,3 +47,22 @@ def get_routes(city: str) -> None:
 
     with open('resources/' + city.strip('/') + '/routes.json', 'w', encoding='utf-8') as file:
         json.dump(routes, file, ensure_ascii=False)
+
+
+def post_ajax(city: str, bus_id: str = 0, date: str = TODAY) -> dict:
+    """
+    get point data from bustime.ru
+    :param city: str  # city of search
+    :param uid: str  # vehicle unique id
+    :param bus_id: str  # route id
+    :param date: str  # date of search
+    :return: list  # with dicts of data
+    credit: github.com/az09
+    """
+
+    data = {'city_slug': city,
+            'bus_id': bus_id,
+            'day': date}
+
+    return requests.post(HOST + '/ajax/transport/', data=data).json()
+
