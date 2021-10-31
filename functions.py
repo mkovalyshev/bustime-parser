@@ -1,10 +1,18 @@
+# from typing import Optional
 import requests
 import datetime as dt
 from bs4 import BeautifulSoup
 import json
 import os
+import yaml
+from sqlalchemy import create_engine
+import pandas as pd
 
-TODAY = dt.datetime.today().strftime('%Y-%m-%d')
+with open('config.yaml') as f:
+    CONFIG = yaml.load(f, Loader=yaml.FullLoader)
+
+# YESTERDAY = (dt.datetime.today() - dt.timedelta(days=1)).strftime('%Y-%m-%d')
+YESTERDAY = '2021-10-26'
 HOST = 'https://www.bustime.ru'
 HEADERS = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,'
@@ -13,57 +21,95 @@ HEADERS = {
                   'Chrome/87.0.4280.141 Safari/537.36'
 }
 
+pg_engine = create_engine(f'postgresql+psycopg2://postgres:{CONFIG["db_pass"]}@localhost/postgres')
 
-def get_cities(url: str = 'https://www.bustime.ru') -> None:
+
+def get_cities(url: str = 'https://www.bustime.ru') -> dict:
     """
-    gets list of cities' hrefs from bustime.ru
-    writes to resources/cities.txt
-    returns None
+    gets dict of cities from database (if available)
+    else scrapes from website and writes to db
+    returns dict or None
     """
 
-    soup = BeautifulSoup(requests.get(url).text, features="html.parser")
+    cities = pg_engine.execute("select * from bustime.cities").fetchall()
 
-    cities = [x.get('href') for x in soup.find("div", {"aria-label": " Список городов "}). \
-        find_all("a", {"class": 'item'})]
+    if len(cities) != 0:
+        return dict(tuple([tuple([x[1], x[0]]) for x in cities]))
 
-    if not os.path.exists('resources/'):
-        os.mkdir('resources/')
+    else:
 
-    with open("resources/cities.txt", "w") as file:
-        file.write(';'.join(cities))
+        soup = BeautifulSoup(requests.get(url).text, features="html.parser")
+
+        cities = [x.get('href').strip('/') for x in soup.find("div", {"aria-label": " Список городов "}). \
+            find_all("a", {"class": 'item'})]
+
+        cities_df = pd.DataFrame(cities, columns=['name']).reset_index().rename(columns={'index': 'id'})
+
+        cities_df.to_sql('cities',
+                         pg_engine,
+                         schema='bustime',
+                         if_exists='append',
+                         index=False)
+
+        cities = pg_engine.execute("select * from bustime.cities").fetchall()
+
+        return dict(tuple([tuple([x[1], x[0]]) for x in cities]))
 
 
-def get_routes(city: str) -> None:
+def get_routes(city: str, cities_dict: dict) -> list:
     """
-    gets dict of route ids matched with route names
-    writes to resources/*city*/routes.json
-    return None
+    gets list of dicts with routes data from database (if available)
+    else scrapes from website and writes to db
+    returns list of dicts
     """
-    soup = BeautifulSoup(requests.get(HOST + city + 'transport/' + TODAY).text, features="html.parser")
-    routes = {int(x.get('value')): x.text for x in soup.find('select', {'name': 'bus_id'}). \
-        find_all('option') if x.get('value') != '0'}
 
-    if not os.path.exists('resources/' + city.strip('/')):
-        os.mkdir('resources/' + city.strip('/'))
+    routes = pd.read_sql(f"select * from bustime.routes where city_id={cities_dict[city]}", pg_engine)
 
-    with open('resources/' + city.strip('/') + '/routes.json', 'w', encoding='utf-8') as file:
-        json.dump(routes, file, ensure_ascii=False)
+    if len(routes) != 0:
+        routes_dict = routes.to_dict(orient='index')
+        return [routes_dict[i] for i in routes_dict.keys()]
+
+    else:
+        soup = BeautifulSoup(requests.get(HOST + '/' + city + '/' + 'transport/' + TODAY).text, features="html.parser")
+        routes = {int(x.get('value')): x.text for x in soup.find('select', {'name': 'bus_id'}). \
+            find_all('option') if x.get('value') != '0'}
+
+        routes_df = pd.DataFrame(routes.items(), columns=['id', 'name'])
+        routes_df['city_id'] = cities_dict[city]
+
+        routes_df.to_sql('routes',
+                         pg_engine,
+                         schema='bustime',
+                         if_exists='append',
+                         index=False)
+
+        routes = pd.read_sql(f"select * from bustime.routes where city_id={cities_dict[city]}", pg_engine)
+        routes_dict = routes.to_dict(orient='index')
+        return [routes_dict[i] for i in routes_dict.keys()]
 
 
-def post_ajax(city: str, bus_id: str = 0, date: str = TODAY) -> dict:
+def post_ajax(city: str, bus_id: str = 0, date: str = YESTERDAY) -> None:
     """
-    get point data from bustime.ru
+    gets telemetry data from bustime.ru
+    loads to database
     :param city: str  # city of search
-    :param uid: str  # vehicle unique id
     :param bus_id: str  # route id
     :param date: str  # date of search
-    :return: list  # with dicts of data
+    :return: None
     credit: github.com/az09
     """
 
-    data = {'city_slug': city.strip('/'),
+    data = {'city_slug': city,
             'bus_id': bus_id,
             'day': date}
 
-    return requests.post(HOST + '/ajax/transport/', data=data).json()
+    response_df = pd.DataFrame(requests.post(HOST + '/ajax/transport/', data=data).json())
+    response_df['timestamp'] = date + ' ' + response_df['timestamp']
+    response_df['timestamp'] = pd.to_datetime(response_df['timestamp'])
+    response_df['upload_date'] = datetime.datetime.today()
 
+    response_df.to_sql('telemetry',
+                       pg_engine,
+                       schema='bustime',
+                       if_exists='append',
+                       index=False)
