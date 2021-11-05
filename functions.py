@@ -1,9 +1,6 @@
-# from typing import Optional
 import requests
 import datetime as dt
 from bs4 import BeautifulSoup
-import json
-import os
 import yaml
 from sqlalchemy import create_engine
 import pandas as pd
@@ -11,8 +8,7 @@ import pandas as pd
 with open('config.yaml') as f:
     CONFIG = yaml.load(f, Loader=yaml.FullLoader)
 
-# YESTERDAY = (dt.datetime.today() - dt.timedelta(days=1)).strftime('%Y-%m-%d')
-YESTERDAY = '2021-10-26'
+YESTERDAY = (dt.datetime.today() - dt.timedelta(days=1)).strftime('%Y-%m-%d')
 HOST = 'https://www.bustime.ru'
 HEADERS = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,'
@@ -31,7 +27,9 @@ def get_cities(url: str = 'https://www.bustime.ru') -> dict:
     returns dict or None
     """
 
-    cities = pg_engine.execute("select * from bustime.cities").fetchall()
+    cities = pg_engine.execute("""select * from bustime.cities
+                                  where id in (7,21,28,46,54,5573,80,101,109,120,123,132,136,143)""").\
+        fetchall()
 
     if len(cities) != 0:
         return dict(tuple([tuple([x[1], x[0]]) for x in cities]))
@@ -70,7 +68,7 @@ def get_routes(city: str, cities_dict: dict) -> list:
         return [routes_dict[i] for i in routes_dict.keys()]
 
     else:
-        soup = BeautifulSoup(requests.get(HOST + '/' + city + '/' + 'transport/' + TODAY).text, features="html.parser")
+        soup = BeautifulSoup(requests.get(HOST + '/' + city + '/' + 'transport/' + YESTERDAY).text, features="html.parser")
         routes = {int(x.get('value')): x.text for x in soup.find('select', {'name': 'bus_id'}). \
             find_all('option') if x.get('value') != '0'}
 
@@ -88,7 +86,7 @@ def get_routes(city: str, cities_dict: dict) -> list:
         return [routes_dict[i] for i in routes_dict.keys()]
 
 
-def post_ajax(city: str, bus_id: str = 0, date: str = YESTERDAY) -> None:
+def get_telemetry(city: str, bus_id: str = 0, date: str = YESTERDAY) -> None:
     """
     gets telemetry data from bustime.ru
     loads to database
@@ -104,12 +102,13 @@ def post_ajax(city: str, bus_id: str = 0, date: str = YESTERDAY) -> None:
             'day': date}
 
     response_df = pd.DataFrame(requests.post(HOST + '/ajax/transport/', data=data).json())
-    response_df['timestamp'] = date + ' ' + response_df['timestamp']
-    response_df['timestamp'] = pd.to_datetime(response_df['timestamp'])
-    response_df['upload_date'] = datetime.datetime.today()
+    if len(response_df)!=0:
+        response_df['timestamp'] = date + ' ' + response_df['timestamp']
+        response_df['timestamp'] = pd.to_datetime(response_df['timestamp'])
+        response_df['upload_date'] = dt.datetime.today()
 
-    response_df.to_sql('telemetry',
-                       pg_engine,
-                       schema='bustime',
-                       if_exists='append',
-                       index=False)
+        response_df.to_sql(f'telemetry_{YESTERDAY.replace("-", "_")}',
+                           pg_engine,
+                           schema='bustime',
+                           if_exists='append',
+                           index=False)
