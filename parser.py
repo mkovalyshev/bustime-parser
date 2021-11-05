@@ -1,42 +1,45 @@
-import os
-
 from functions import *
 from tqdm import tqdm
 
 print("Start")  # LOG
-print(TODAY)
+print(YESTERDAY)
 
-print("Loading cities.txt")
-if os.path.exists('resources/cities.txt'):
-    print('LOG: found local file')
-    with open('resources/cities.txt') as f:
-        cities = f.read().split(';')
-else:
-    print('LOG: fetching from bustime.ru')
-    get_cities()
-    with open('resources/cities.txt') as f:
-        cities = f.read().split(';')
+print("Creating table")
 
-print(f'LOG: fetched {len(cities)} cities')
+pg_engine.execute(f"""
+-- DROP TABLE bustime.telemetry_{YESTERDAY.replace('-', '_')};
+
+CREATE TABLE bustime.telemetry_{YESTERDAY.replace('-', '_')} (
+	uniqueid varchar(8) NOT NULL,
+	"timestamp" timestamp NOT NULL,
+	bus_id int4 NOT NULL,
+	heading int4 NULL,
+	speed int4 NULL,
+	lon float8 NOT NULL,
+	lat float8 NOT NULL,
+	direction int4 NULL,
+	gosnum varchar(64) NULL,
+	bortnum varchar(64) NULL,
+	probeg int4 NULL,
+	upload_date timestamp NOT NULL
+);
 
 
-print('Getting route lists')
-for city in tqdm(cities):
-    if not os.path.exists('resources'+city+'routes.json'):
-        get_routes(city)
-print('Success\n\n')
+-- bustime.telemetry_{YESTERDAY.replace('-', '_')} foreign keys
 
-print('Getting telemetry')
-for city in cities:
-    with open('resources'+city+'routes.json', encoding='utf-8') as f:
-        routes = json.load(f)
+ALTER TABLE bustime.telemetry_{YESTERDAY.replace('-', '_')} ADD CONSTRAINT telemetry_fk FOREIGN KEY (bus_id) REFERENCES bustime.routes(id);
+""")
 
-    print('\t', city)
+print('Loading cities')
 
-    for route in routes.keys():  # Move with clause to function?
-        directory = 'resources' + city + TODAY
-        if not os.path.exists(directory):
-            os.mkdir(directory)
-        with open(directory+'/'+route+'.json', 'w', encoding='utf-8') as file:
-            response = post_ajax(city, route, TODAY)
-            json.dump(response, file, ensure_ascii=False)
+cities = get_cities()
+
+print(f'LOG: fetched {len(list(cities.keys()))} cities')
+
+for city in cities.keys():
+    print(city)
+    routes = get_routes(city, cities)
+
+    for route in tqdm(routes):
+        get_telemetry(city, route['id'])
+
