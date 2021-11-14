@@ -28,7 +28,7 @@ def get_cities(url: str = 'https://www.bustime.ru') -> dict:
     """
 
     cities = pg_engine.execute("""select * from bustime.cities
-                                  where id in (7,21,28,46,54,5573,80,101,109,120,123,132,136,143)""").\
+                                  where id in (21,28,46,54,55,73,80,101,120,123,132,136)""").\
         fetchall()
 
     if len(cities) != 0:
