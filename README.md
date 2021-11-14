@@ -3,8 +3,8 @@ Set of scripts for getting and analyzing data from bustime.ru
   
 Currently implemented features:
 <li>Fetching data from bustime.ru via API (cred: <a href="https://github.com/az09">Anton Belichkov</a>)
-<li>Database integration (storing cities, routes and telemetry)</li>
-
+<li>Database integration (storing cities, routes and telemetry)</li>  
+  
 TODOs:  
 <li>Data processing (clipping near stops)</li>
 <li>Data analysis</li>  
