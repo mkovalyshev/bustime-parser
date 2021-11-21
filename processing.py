@@ -95,6 +95,29 @@ stops_utm = project_df(stops, 32639)
 
 data_clipped = buffer_clip(data_utm, stops_utm, 50)
 
+data_clipped_sjoin = data_clipped.sjoin_nearest(stops_utm)[[
+    'uniqueid',
+    'timestamp',
+    'bus_id',
+    'heading',
+    'speed',
+    'lon_left',
+    'lat_left',
+    'direction',
+    'gosnum',
+    'bortnum',
+    'probeg',
+    'upload_date',
+    'point_id',
+    'ordinal',
+    'geometry',
+    'id'
+]]
+
+data_clipped_sjoin = data_clipped_sjoin.rename(columns={'id': 'nearest_stop_id'})
+
+
+
 ...
 
 # TODO: Implement loading to database
