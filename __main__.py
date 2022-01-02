@@ -23,7 +23,7 @@ logger.debug('Postgres engine created')
 if config['TEMP_FOLDER'] not in os.listdir():
     logger.debug('TEMP_FOLDER not found')
     os.mkdir(config.get('TEMP_FOLDER'))
-    logger.debug('TEMP_FOLDER created at', config.get('TEMP_FOLDER'))
+    logger.debug('TEMP_FOLDER created at', config['TEMP_FOLDER'])
 
 if not config['MIGRATION_COMPLETED']:
     from migration import run_migrations, SCHEMA_DDL

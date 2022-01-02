@@ -113,6 +113,7 @@ def write_routes(config_, engine_):
 
     try:
         city_df = pd.read_sql("select id, name from transport.cities", engine_)
+        logger.debug('Cities load from DB successful')
     except:
         city_df = pd.DataFrame([], columns=['id', 'name'])
 
