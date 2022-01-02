@@ -4,36 +4,38 @@ from sqlalchemy import create_engine
 
 SCHEMA_DDL = """
 -- schema
-CREATE SCHEMA IF NOT EXISTS transportation AUTHORIZATION {};
+CREATE SCHEMA IF NOT EXISTS transport AUTHORIZATION {};
 
 -- cities relation
-DROP TABLE IF EXISTS transportation.cities CASCADE;
+DROP TABLE IF EXISTS transport.cities CASCADE;
 
-CREATE TABLE transportation.cities (
+CREATE TABLE transport.cities (
     id     bigint NOT NULL CONSTRAINT cities_pk PRIMARY KEY
   , name   varchar(255) NOT NULL
   , CONSTRAINT unique_name UNIQUE(name)
 );
 
 -- routes relation
-DROP TABLE IF EXISTS transportation.routes CASCADE;
+DROP TABLE IF EXISTS transport.routes CASCADE;
 
-CREATE TABLE transportation.routes (
+CREATE TABLE transport.routes (
     id        int NOT NULL CONSTRAINT routes_pk PRIMARY KEY
   , name      varchar(255) NOT NULL
   , type      varchar(255)
-  , city_id   bigint NOT NULL REFERENCES transportation.cities
+  , city_id   bigint NOT NULL REFERENCES transport.cities
 );
+
+COMMIT;
 """
 
 CITIES_CONSTRAINTS = """
-ALTER TABLE transportation.cities ADD CONSTRAINT cities_pk PRIMARY KEY (id);
-ALTER TABLE transportation.cities ADD CONSTRAINT unique_name UNIQUE (name);
+ALTER TABLE transport.cities ADD CONSTRAINT cities_pk PRIMARY KEY (id);
+ALTER TABLE transport.cities ADD CONSTRAINT unique_name UNIQUE (name);
 """
 
 ROUTES_CONSTRAINTS = """
-ALTER TABLE transportation.routes ADD CONSTRAINT routes_pk PRIMARY KEY (id);
-ALTER TABLE transportation.routes ADD CONSTRAINT routes_city_id_fkey FOREIGN KEY (city_id) REFERENCES transportation.cities(id);
+ALTER TABLE transport.routes ADD CONSTRAINT routes_pk PRIMARY KEY (id);
+ALTER TABLE transport.routes ADD CONSTRAINT routes_city_id_fkey FOREIGN KEY (city_id) REFERENCES transport.cities(id);
 """
 
 CONSTRAINTS_DDL = {

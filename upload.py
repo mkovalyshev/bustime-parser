@@ -18,7 +18,7 @@ def drop_constraints(engine_):
     for relation in mig.CONSTRAINTS_NAMES.keys():
         logger_.debug(f'Found constraints in {relation}')
         for constraint in mig.CONSTRAINTS_NAMES[relation]:
-            subqueries.append(f"ALTER TABLE transportation.{relation} DROP CONSTRAINT IF EXISTS {constraint} CASCADE;")
+            subqueries.append(f"ALTER TABLE transport.{relation} DROP CONSTRAINT IF EXISTS {constraint} CASCADE;")
 
     engine_.execute('\n'.join(subqueries))
     logger_.debug('Dropped constraints from schema')
@@ -39,16 +39,16 @@ def load_files(config_, engine_):
         relation = file_.split('_')[0]
         df = pd.read_csv('/'.join([config_['TEMP_FOLDER'], file_]))
 
-        engine_.execute(f"TRUNCATE TABLE transportation.{relation};")
-        logger_.debug(f'Truncated transportation.{relation}')
+        engine_.execute(f"TRUNCATE TABLE transport.{relation};")
+        logger_.debug(f'Truncated transport.{relation}')
 
         df.to_sql(relation,
                   engine_,
                   index=False,
                   if_exists='append',
-                  schema='transportation')
+                  schema='transport')
 
-        logger_.debug(f'Loaded {len(df)} rows to transportation.{relation}')
+        logger_.debug(f'Loaded {len(df)} rows to transport.{relation}')
 
         if config_['REMOVE_TEMP']:
             os.remove('/'.join([config_['TEMP_FOLDER'], file_]))

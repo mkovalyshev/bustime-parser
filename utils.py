@@ -1,3 +1,5 @@
+import datetime
+import os
 import sys
 import logging
 import hashlib
@@ -13,9 +15,17 @@ def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
-    handler = StreamHandler(stream=sys.stdout)
-    handler.setFormatter(Formatter(fmt='[%(name)s: %(asctime)s: %(levelname)s] %(message)s'))
-    logger.addHandler(handler)
+    stream_handler = StreamHandler(stream=sys.stdout)
+    stream_handler.setFormatter(Formatter(fmt='[%(name)s: %(asctime)s: %(levelname)s] %(message)s'))
+    logger.addHandler(stream_handler)
+
+    if 'log' not in os.listdir():
+        os.mkdir('log')
+
+    file_handler = logging.FileHandler(f'log/{datetime.date.today()}.log')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(Formatter(fmt='[%(name)s: %(asctime)s: %(levelname)s] %(message)s'))
+    logger.addHandler(file_handler)
 
     return logger
 
