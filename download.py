@@ -1,3 +1,4 @@
+import os
 import datetime
 import requests
 import pandas as pd
@@ -65,12 +66,38 @@ def get_routes(city: str, city_dict: dict, config_: dict, date: datetime.date, f
         routes_df.to_csv(file_, encoding='utf-8', index=False)
 
 
+def get_telemetry(date: datetime.date, city_name: str, route_id: int, config_, logger_, file_=None):
+    """
+    gets pandas.DataFrame of telemetry data by route_id
+    """
+
+    data = {
+        'city_slug': city_name,
+        'bus_id': str(route_id),
+        'day': date.strftime('%Y-%m-%d')
+    }
+
+    telemetry_df = pd.DataFrame(requests.post(config_['HOST'] + '/ajax/transport/', data=data).json())
+
+    if len(telemetry_df) != 0:
+        telemetry_df['timestamp'] = date.strftime('%Y-%m-%d') + ' ' + telemetry_df['timestamp']
+        telemetry_df['timestamp'] = pd.to_datetime(telemetry_df['timestamp'])
+        telemetry_df['upload_date'] = datetime.datetime.today()
+
+    logger_.debug(f'Date = {date} // City = {city_name} // Route = {route_id} // Row count = {len(telemetry_df)}')
+
+    if not file_:
+        return telemetry_df
+    else:
+        telemetry_df.to_csv(file_, encoding='utf-8', index=False)
+
+
 def write_cities(config_):
     """
     Writes .csv with cities data to temp folder
     """
 
-    filename = f'cities_{datetime.date.today().strftime("%Y-%m-%d").replace("-", "_")}.csv'
+    filename = f'cities_{datetime.date.today().strftime("%Y_%m_%d")}.csv'
     get_cities(config_, '/'.join([config_['TEMP_FOLDER'], filename]))
 
     logger = get_logger('write_cities')
@@ -84,7 +111,10 @@ def write_routes(config_, engine_):
 
     logger = get_logger('write_routes')
 
-    city_df = pd.read_sql("select id, name from transportation.cities", engine_)
+    try:
+        city_df = pd.read_sql("select id, name from transport.cities", engine_)
+    except:
+        city_df = pd.DataFrame([], columns=['id', 'name'])
 
     if len(city_df) == 0:
         logger.debug('Cities load from DB failed, fetching from HOST')
@@ -93,7 +123,7 @@ def write_routes(config_, engine_):
     city_dict = {x[1]: x[0] for x in city_df.to_records(index=False)}
 
     for city in config_['CITIES']:
-        filename = f'routes_{datetime.date.today().strftime("%Y-%m-%d").replace("-", "_")}.csv'
+        filename = f'routes_{datetime.date.today().strftime("%Y_%m_%d")}.csv'
         get_routes(city,
                    city_dict,
                    config_,
@@ -101,5 +131,22 @@ def write_routes(config_, engine_):
                    '/'.join([config_['TEMP_FOLDER'], filename]))
 
 
-if __name__ == '__main__':
-    ...  # TODO: make separate run possible
+def write_telemetry(date, city_name, route_id, config_, logger_):
+    """
+    Writes .csv with telemetry data into temp folder with subfolder
+    """
+
+    folder = f'telemetry_{date.strftime("%Y_%m_%d")}'
+    path = '/'.join([config_['TEMP_FOLDER'], folder])
+
+    if folder not in os.listdir(config_['TEMP_FOLDER']):
+        os.mkdir(path)
+
+    get_telemetry(date,
+                  city_name,
+                  route_id,
+                  config_,
+                  logger_,
+                  path+f'/{city_name}_{route_id}_{date.strftime("%Y_%m_%d")}.csv')
+
+    logger_.debug(f'Wrote data to {city_name}_{route_id}_{date.strftime("%Y_%m_%d")}.csv')
