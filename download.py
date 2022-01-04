@@ -123,7 +123,7 @@ def write_routes(config_, engine_):
 
     city_dict = {x[1]: x[0] for x in city_df.to_records(index=False)}
 
-    for city in config_['CITIES']:
+    for city in list(city_df['name']):  # NOT TESTED
         filename = f'routes_{datetime.date.today().strftime("%Y_%m_%d")}.csv'
         get_routes(city,
                    city_dict,
