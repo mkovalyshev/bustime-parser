@@ -34,25 +34,26 @@ def load_files(config_, engine_):
     temp_files = os.listdir(config_['TEMP_FOLDER'])
 
     for file_ in temp_files:
-        logger_.debug(f'Processing {file_}')
+        if os.path.isfile('/'.join([config_['TEMP_FOLDER'], file_])) and 'csv' in file_:
+            logger_.debug(f'Processing {file_}')
 
-        relation = file_.split('_')[0]
-        df = pd.read_csv('/'.join([config_['TEMP_FOLDER'], file_]))
+            relation = file_.split('_')[0]
+            df = pd.read_csv('/'.join([config_['TEMP_FOLDER'], file_]))
 
-        engine_.execute(f"TRUNCATE TABLE transport.{relation};")
-        logger_.debug(f'Truncated transport.{relation}')
+            engine_.execute(f"TRUNCATE TABLE transport.{relation};")
+            logger_.debug(f'Truncated transport.{relation}')
 
-        df.to_sql(relation,
-                  engine_,
-                  index=False,
-                  if_exists='append',
-                  schema='transport')
+            df.to_sql(relation,
+                      engine_,
+                      index=False,
+                      if_exists='append',
+                      schema='transport')
 
-        logger_.debug(f'Loaded {len(df)} rows to transport.{relation}')
+            logger_.debug(f'Loaded {len(df)} rows to transport.{relation}')
 
-        if config_['REMOVE_TEMP']:
-            os.remove('/'.join([config_['TEMP_FOLDER'], file_]))
-            logger_.debug(f'Removed {file_}')
+            if config_['REMOVE_TEMP']:
+                os.remove('/'.join([config_['TEMP_FOLDER'], file_]))
+                logger_.debug(f'Removed {file_}')
 
 
 def set_constraints(engine_):

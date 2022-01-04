@@ -123,13 +123,18 @@ def write_routes(config_, engine_):
 
     city_dict = {x[1]: x[0] for x in city_df.to_records(index=False)}
 
-    for city in list(city_df['name']):  # NOT TESTED
-        filename = f'routes_{datetime.date.today().strftime("%Y_%m_%d")}.csv'
-        get_routes(city,
-                   city_dict,
-                   config_,
-                   config_['DATE'].strftime("%Y-%m-%d"),
-                   '/'.join([config_['TEMP_FOLDER'], filename]))
+    df_list = []
+
+    for city in list(city_df['name']):
+        df_list.append(get_routes(city,
+                                  city_dict,
+                                  config_,
+                                  config_['DATE'].strftime("%Y-%m-%d")))
+
+    filename = f'temp/routes_{datetime.date.today().strftime("%Y_%m_%d")}.csv'
+
+    df = pd.concat(df_list)
+    df.to_csv(filename, index=False)
 
 
 def write_telemetry(date, city_name, route_id, config_, logger_):
