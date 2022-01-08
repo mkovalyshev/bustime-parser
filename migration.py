@@ -67,8 +67,9 @@ PARTITION BY RANGE("timestamp");
 """
 
 TELEMETRY_PARTITION_DDL = """
-CREATE TABLE transport.telemetry_{}
-PARTITION OF transport.telemetry FOR VALUES FROM ('{}') TO ('{}');
+DROP TABLE IF EXISTS transport.telemetry_{0};
+CREATE TABLE transport.telemetry_{0}
+PARTITION OF transport.telemetry FOR VALUES FROM ('{1}') TO ('{2}');
 """
 
 
