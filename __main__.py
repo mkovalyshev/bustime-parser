@@ -4,6 +4,7 @@ import yaml
 from sqlalchemy import create_engine
 from utils import get_logger
 from download import write_telemetry
+from upload import upload_telemetry
 
 logger = get_logger('__main__')
 
@@ -77,3 +78,5 @@ while date <= datetime.date.today() - datetime.timedelta(days=1):
                 write_telemetry(date, route[0], route[1], config, telemetry_logger)
 
     date += datetime.timedelta(days=1)
+
+upload_telemetry(config, postgres_engine)
