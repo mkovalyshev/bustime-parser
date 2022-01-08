@@ -48,6 +48,29 @@ CONSTRAINTS_NAMES = {
     'routes': ['routes_pk', 'routes_city_id_fkey']
 }
 
+TELEMETRY_DDL = """
+CREATE TABLE IF NOT EXISTS transport.telemetry (
+    uniqueid      varchar(8) NOT NULL
+  , "timestamp"   timestamp NOT NULL
+  , bus_id        bigint NOT NULL
+  , heading       int
+  , speed         int
+  , lon           float NOT NULL
+  , lat           float NOT NULL
+  , direction     int
+  , gosnum        varchar(255)
+  , bortnum       varchar(255)
+  , probeg        int
+  , upload_date   timestamp NOT NULL
+)
+PARTITION BY RANGE("timestamp");
+"""
+
+TELEMETRY_PARTITION_DDL = """
+CREATE TABLE transport.telemetry_{}
+PARTITION OF transport.telemetry FOR VALUES FROM ('{}') TO ('{}');
+"""
+
 
 def run_migrations(query, config_):
     """

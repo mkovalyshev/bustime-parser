@@ -54,11 +54,9 @@ if len(os.listdir(config['TEMP_FOLDER'])) != 0 and config['UPDATE_CITIES'] and c
 telemetry_logger = get_logger('telemetry')
 
 date = postgres_engine.execute("""
-    select coalesce(min(date(trim('telemetry_' from tablename))), current_date - interval '1 week') as min_date
-    from pg_catalog.pg_tables
+    select coalesce(max(date("timestamp")), current_date - interval '1 week') as min_date
+    from transport.telemetry
     where True
-        and schemaname = 'transport'
-        and tablename like '%%telemetry%%'
 """).fetchone()[0].date()
 
 routes = postgres_engine.execute("""
