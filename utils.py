@@ -26,6 +26,7 @@ def get_logger(name):
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(Formatter(fmt='[%(name)s: %(asctime)s: %(levelname)s] %(message)s'))
     logger.addHandler(file_handler)
+    logger.propagate = False
 
     return logger
 

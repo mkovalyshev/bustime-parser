@@ -1,0 +1,22 @@
+DB_USER: user
+DB_PASS: 0000
+DB_HOST: localhost
+DB_NAME: postgres
+DB_PORT: 5432
+
+CITIES: [kazan]
+DATE: 2021-01-04
+
+TEMP_FOLDER: temp
+REMOVE_TEMP: False
+
+HOST: https://www.bustime.ru
+HEADERS:
+  accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,'
+    'application/signed-exchange;v=b3;q=0.9
+  user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+    'Chrome/87.0.4280.141 Safari/537.36
+
+MIGRATION_COMPLETED: True
+UPDATE_CITIES: False
+UPDATE_ROUTES: False
